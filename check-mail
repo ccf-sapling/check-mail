@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Title: check-mail
+# V1.0
+# Check if a given user id has received a new email within a certain time period(10 seconds in this case). The program allows the user to check any user id on the system, allows the user to control the length of the time period to check, and allows the user to decide how to be informed (by email or message). Assuming emails are stored in /var/spool/mail.
+
+userid=$USER; time=10; mailopt=FALSE
+[ "$#" -gt 5 ] && echo "Usage: $0 [-u userid] [-t time] [-m]" && exit 1
+
+while [ $# -ne 0 ]
+do
+	case "$1" in
+		-u) userid="$2"; shift 2;;
+		-t) time="$2"; shift 2;;
+		-m) mailopt=TRUE; shift;;
+	esac
+done
+
+grep "^$userid:" /etc/passwd > /dev/null || echo $userid is not a valid user id on this system. && exit 3
+size1=`ls -l /var/spool/mail | grep " $userid " | cut -c37-42`
+[ -z /var/spool/mail/"$userid" ] && size1=0
+size2=$size1
+
+until [ "$size2" -gt "$size1" ]
+do
+	sleep $time
+	size2=`ls -l /var/spool/mail | grep " $userid " | cut -c37-42`
+done
+
+[ "$mailopt" = FALSE ] && echo "$userid has received a new email."
+[ "$mailopt" = TRUE ] && echo "$userid has received a new email." | Mail $USER
